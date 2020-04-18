@@ -22,6 +22,16 @@ It will build the application.
 
 ## Running it
 
+Turtlebot3 demo:
+export TURTLEBOT3_MODEL="waffle"
+roslaunch turtlebot3_gazebo turtlebot3_world.launch
+
+export TURTLEBOT3_MODEL="waffle"
+roslaunch rtabmap_ros demo_turtlebot3_navigation.launch
+
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+
+
 In the root of the cloned repository run:
 ```shell script
 source devel/setup.bash
