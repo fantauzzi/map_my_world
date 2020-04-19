@@ -210,7 +210,6 @@
 
 
     <joint type="fixed" name="hokuyo_joint">
-        <!-- <origin xyz="0.15 0 0.1" rpy="0 0 0"/> -->
         <origin xyz="0 0 0.1" rpy="0 0 0"/>
         <child link="hokuyo"/>
         <parent link="chassis"/>
@@ -221,8 +220,7 @@
 
 
     <joint name="camera_optical_joint" type="fixed">
-        <!-- <origin xyz="0 0 0" rpy="-1.5707 0 -1.5707"/>  -->
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="-1.5707 0 -1.5707"/>
         <parent link="camera"/>
         <child link="camera_link_optical"/>
     </joint>
