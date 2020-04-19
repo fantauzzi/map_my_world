@@ -24,7 +24,7 @@ git clone https://github.com/fantauzzi/map_my_world.git
 ```
 
 
-**Outside your Catkin workspace**, install RTAB-MAP standalone lilbraries. Add `-DCMAKE_INSTALL_PREFIX=<path to catkin ws>/devel` to the cmake command below if you want to install in the Catkin's devel folder (without `sudo`). Replace `<path to catkin ws>` with the path to the cloned repository (which is a catkin workspace).
+**Outside your Catkin workspace**, install RTAB-MAP standalone lilbraries. Add `-DCMAKE_INSTALL_PREFIX=<path to catkin ws>/devel` to the `cmake` command below if you want to install in the Catkin's devel folder (without `sudo`). Replace `<path to catkin ws>` with the path to the cloned repository (which is a catkin workspace).
 
 ```shell script
 git clone https://github.com/introlab/rtabmap.git rtabmap
@@ -50,14 +50,6 @@ source devel/setup.bash
 roslaunch my_robot world.launch 
 ```
 Gazebo and RViz will start, showing the environment and placing a blue robot in it.
-  
-In another shell, in the same directory, run:
-```shell script
-source devel/setup.bash
-roslaunch my_robot mapping.launch 
-```
-
-It will start RTAB-MAP, and begin building the map.
 
 To drive the robot around, run, again in the same directory:
 ```shell script
@@ -66,8 +58,21 @@ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 ```
 
 The keyboard teleop node will start. The robot is non-holonomic (it has a differential drive). For the keyboard teleoperation to work, make sure you have its window/shell selected before typing.
+  
+In another shell, in the same directory, run:
+```shell script
+source devel/setup.bash
+roslaunch my_robot mapping.launch 
+```
 
-The resulting RTAB-Map database file is saved at the default location, `~/.ros/rtabmap.db`.
+It will start RTAB-MAP, and begin building the map. The resulting database file is saved at the default location, `~/.ros/rtabmap.db`, overwriting any database previously saved there.
+
+To use a map already built for localization, instead of `mapping.launch` run:
+
+```shell script
+source devel/setup.bash
+roslaunch my_robot localization.launch 
+```
 
 ## Screenshots
 
