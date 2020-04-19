@@ -152,6 +152,10 @@
     </link>
 
 
+    <link name="camera_link_optical">
+    </link>
+
+
     <link name='hokuyo'>
         <inertial>
             <mass value="1e-5"/>
@@ -223,9 +227,6 @@
         <child link="camera_link_optical"/>
     </joint>
 
-
-    <link name="camera_link_optical">
-    </link>
 
     <gazebo reference="left_wheel">
         <material>Gazebo/DarkGray</material>
