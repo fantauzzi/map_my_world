@@ -8,12 +8,16 @@ The following needs to be installed:
 
 The repository is a Catkin workspace, and includes the [rtabmap_ros](http://wiki.ros.org/rtabmap_ros) package, which in turn has several dependencies; the easiest way to install them is with:
 
+**- for ROS Kinetic**
 ```shell script
-sudo apt-get install ros-<distribution>-rtabmap ros-<distribution>-rtabmap-ros
-sudo apt-get remove ros-<distribution>-rtabmap ros-<distribution>-rtabmap-ros
+sudo apt-get install ros-kinetic-rtabmap ros-kinetic-rtabmap-ros
+sudo apt-get remove ros-kinetic-rtabmap ros-kinetic-rtabmap-ros
 ```
-
-where `<distribution>` is either `melodic` or `kinetic`.
+**- for ROS Melodic**
+```shell script
+sudo apt-get install ros-melodic-rtabmap ros-melodic-rtabmap-ros
+sudo apt-get remove ros-melodic-rtabmap ros-melodic-rtabmap-ros
+```
 
 Tested under Ubuntu 18.04 (ROS Melodic) and Ubuntu 16.04 (ROS Kinetic).
  
