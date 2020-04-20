@@ -3,42 +3,47 @@
  
 ## Dependencies
 The following needs to be installed:
-- ROS Melodic or Kinetic and the corresponding Gazebo version;
+- ROS Kinetic and the corresponding Gazebo version;
 - cmake 2.8.3 or later and gcc 7.5 or later.
 
 The repository is a Catkin workspace, and includes the [rtabmap_ros](http://wiki.ros.org/rtabmap_ros) package, which in turn has several dependencies; the easiest way to install them is with:
 
-**- for ROS Kinetic**
 ```shell script
 sudo apt-get install ros-kinetic-rtabmap ros-kinetic-rtabmap-ros
 sudo apt-get remove ros-kinetic-rtabmap ros-kinetic-rtabmap-ros
 ```
-**- for ROS Melodic**
-```shell script
-sudo apt-get install ros-melodic-rtabmap ros-melodic-rtabmap-ros
-sudo apt-get remove ros-melodic-rtabmap ros-melodic-rtabmap-ros
-```
 
-Tested under Ubuntu 18.04 (ROS Melodic) and Ubuntu 16.04 (ROS Kinetic).
+Tested under Ubuntu 16.04 with ROS Kinetic.
  
  ## Installation
-Clone the GitHub repository:
+Clone the GitHub repository (which is a Catkin workspace):
 ```shell script
 git clone https://github.com/fantauzzi/map_my_world.git
 ```
 
+Build the RTAB-MAP standalone libraries, **outside the Catkin workspace**. You can then install them  system-wide (with `sudo`) or in the `devel` directory of the cloned repository:
 
-**Outside your Catkin workspace**, install RTAB-MAP standalone lilbraries. Add `-DCMAKE_INSTALL_PREFIX=<path to catkin ws>/devel` to the `cmake` command below if you want to install in the Catkin's devel folder (without `sudo`). Replace `<path to catkin ws>` with the path to the cloned repository (which is a catkin workspace).
-
+**- to install them system-wide**
 ```shell script
 git clone https://github.com/introlab/rtabmap.git rtabmap
 cd rtabmap/build
+git checkout kinetic-devel
 cmake ..
 make
 sudo make install
 ```
 
-Now you are all set to build the project (which includes the `rtabmap_ros` package). Back in the root of the cloned repository:
+**- to install them in the `devel` directory, replace `<path to catkin ws>` with the path to the cloned repository:**
+```shell script
+git clone https://github.com/introlab/rtabmap.git rtabmap
+cd rtabmap/build
+git checkout kinetic-devel
+cmake .. -DCMAKE_INSTALL_PREFIX=<path to catkin ws>/devel
+make
+make install
+```
+
+You are all set to build the project (which includes the `rtabmap_ros` package). Back in the root of the cloned repository:
 
 ```shell script
 catkin_make
@@ -46,7 +51,11 @@ catkin_make
 
 It will build the project.
 
-## Running it
+## Sample of the RTAB-Map Database
+
+A sample of the RTAB-Map database collected while driving around the robot in the provided Gazebo world can be [downloaded from Google Drive](https://drive.google.com/open?id=1r9-yjongY2a0AfF4Nj8WUvtnGhyPJygN). You can use `rtabmap-databaseViewer` to visualize its content. 
+
+## Running
 
 In the root of the cloned repository run:
 ```shell script
@@ -81,20 +90,21 @@ roslaunch my_robot localization.launch
 ## Screenshots
 
 The RTAB-Map database Viewer showing a loop closure link.
+
 ![Screenshot](dbview.png "RTAB-Map database Viewer")
 
 The 3D view of the loop closure link.
+
 ![Screenshot](3dview.png "3D view at the loop closure link")
 
 The generated occupancy grid.
+
 ![Screenshot](occupancy.png "The generated occupancy grind")
 
 ## Credits
 
-The [rtabmap_ros](https://github.com/introlab/rtabmap_ros) package, included in the project. 
+The [rtabmap_ros](https://github.com/introlab/rtabmap_ros)  and [keyboard teleop](http://wiki.ros.org/teleop_twist_keyboard) packages are included in the respository. 
 
-The keyboard teleop [package documentation](http://wiki.ros.org/teleop_twist_keyboard).
-
-The `training_world.pgm` map has been generated from the Gazebo world using [pgm_map_creator](https://github.com/udacity/pgm_map_creator). The package itself is not included in this repository as it is not available for (and doesn't build under) Melodic.
+The `training_world.pgm` map has been generated from the Gazebo world using [pgm_map_creator](https://github.com/udacity/pgm_map_creator).
 
 Templates for configuration files made available by Udacity as part of their Robotics Software Engineer Nanodegree Program.
