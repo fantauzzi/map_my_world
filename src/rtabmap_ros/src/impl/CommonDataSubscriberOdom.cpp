@@ -47,7 +47,6 @@ void CommonDataSubscriber::odomInfoCallback(
 	sensor_msgs::LaserScanConstPtr scan2dMsg; // Null
 	commonOdomCallback(odomMsg, userDataMsg, odomInfoMsg);
 }
-#ifdef RTABMAP_SYNC_USER_DATA
 void CommonDataSubscriber::odomDataCallback(
 		const nav_msgs::OdometryConstPtr& odomMsg,
 		const rtabmap_ros::UserDataConstPtr & userDataMsg)
@@ -65,7 +64,6 @@ void CommonDataSubscriber::odomDataInfoCallback(
 	sensor_msgs::PointCloud2ConstPtr scan3dMsg; // Null
 	commonOdomCallback(odomMsg, userDataMsg, odomInfoMsg);
 }
-#endif
 
 void CommonDataSubscriber::setupOdomCallbacks(
 		ros::NodeHandle & nh,
@@ -81,7 +79,6 @@ void CommonDataSubscriber::setupOdomCallbacks(
 	{
 		odomSub_.subscribe(nh, "odom", 1);
 
-#ifdef RTABMAP_SYNC_USER_DATA
 		if(subscribeUserData)
 		{
 			userDataSub_.subscribe(nh, "user_data", 1);
@@ -96,9 +93,7 @@ void CommonDataSubscriber::setupOdomCallbacks(
 				SYNC_DECL2(odomData, approxSync, queueSize, odomSub_, userDataSub_);
 			}
 		}
-		else 
-#endif
-		if(subscribeOdomInfo)
+		else if(subscribeOdomInfo)
 		{
 			subscribedToOdomInfo_ = true;
 			odomInfoSub_.subscribe(nh, "odom_info", 1);

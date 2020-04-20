@@ -230,7 +230,6 @@ void CommonDataSubscriber::rgbd4OdomScan3dInfoCallback(
 	commonDepthCallback(odomMsg, userDataMsg, imageMsgs, depthMsgs, cameraInfoMsgs, scanMsg, scan3dMsg, odomInfoMsg);
 }
 
-#ifdef RTABMAP_SYNC_USER_DATA
 // 2 RGBD + User Data
 void CommonDataSubscriber::rgbd4DataCallback(
 		const rtabmap_ros::UserDataConstPtr& userDataMsg,
@@ -414,7 +413,6 @@ void CommonDataSubscriber::rgbd4OdomDataScan3dInfoCallback(
 	sensor_msgs::LaserScanConstPtr scanMsg; // Null
 	commonDepthCallback(odomMsg, userDataMsg, imageMsgs, depthMsgs, cameraInfoMsgs, scanMsg, scan3dMsg, odomInfoMsg);
 }
-#endif
 
 void CommonDataSubscriber::setupRGBD4Callbacks(
 		ros::NodeHandle & nh,
@@ -435,7 +433,6 @@ void CommonDataSubscriber::setupRGBD4Callbacks(
 		rgbdSubs_[i] = new message_filters::Subscriber<rtabmap_ros::RGBDImage>;
 		rgbdSubs_[i]->subscribe(nh, uFormat("rgbd_image%d", i), 1);
 	}
-#ifdef RTABMAP_SYNC_USER_DATA
 	if(subscribeOdom && subscribeUserData)
 	{
 		odomSub_.subscribe(nh, "odom", 1);
@@ -481,9 +478,7 @@ void CommonDataSubscriber::setupRGBD4Callbacks(
 			SYNC_DECL6(rgbd4OdomData, approxSync, queueSize, odomSub_, userDataSub_, (*rgbdSubs_[0]), (*rgbdSubs_[1]), (*rgbdSubs_[2]), (*rgbdSubs_[3]));
 		}
 	}
-	else
-#endif		
-	if(subscribeOdom)
+	else if(subscribeOdom)
 	{
 		odomSub_.subscribe(nh, "odom", 1);
 		if(subscribeScan2d)
@@ -527,7 +522,6 @@ void CommonDataSubscriber::setupRGBD4Callbacks(
 			SYNC_DECL5(rgbd4Odom, approxSync, queueSize, odomSub_, (*rgbdSubs_[0]), (*rgbdSubs_[1]), (*rgbdSubs_[2]), (*rgbdSubs_[3]));
 		}
 	}
-#ifdef RTABMAP_SYNC_USER_DATA
 	else if(subscribeUserData)
 	{
 		userDataSub_.subscribe(nh, "user_data", 1);
@@ -572,7 +566,6 @@ void CommonDataSubscriber::setupRGBD4Callbacks(
 			SYNC_DECL5(rgbd4Data, approxSync, queueSize, userDataSub_, (*rgbdSubs_[0]), (*rgbdSubs_[1]), (*rgbdSubs_[2]), (*rgbdSubs_[3]));
 		}
 	}
-#endif
 	else
 	{
 		if(subscribeScan2d)

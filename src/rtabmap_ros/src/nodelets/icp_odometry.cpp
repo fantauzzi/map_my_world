@@ -28,8 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <rtabmap_ros/OdometryROS.h>
 
 #include <pluginlib/class_list_macros.h>
-#include <pluginlib/class_loader.hpp>
-
 #include <nodelet/nodelet.h>
 
 #include <laser_geometry/laser_geometry.h>
@@ -39,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <pcl_conversions/pcl_conversions.h>
 
 #include "rtabmap_ros/MsgConversion.h"
-#include "rtabmap_ros/PluginInterface.h"
 
 #include <rtabmap/core/util3d.h>
 #include <rtabmap/core/util3d_surface.h>
@@ -62,18 +59,14 @@ public:
 		OdometryROS(false, false, true),
 		scanCloudMaxPoints_(0),
 		scanDownsamplingStep_(1),
-		scanRangeMin_(0),
-		scanRangeMax_(0),
 		scanVoxelSize_(0.0),
 		scanNormalK_(0),
-		scanNormalRadius_(0.0),
-		plugin_loader_("rtabmap_ros", "rtabmap_ros::PluginInterface")
+		scanNormalRadius_(0.0)
 	{
 	}
 
 	virtual ~ICPOdometry()
 	{
-		plugins_.clear();
 	}
 
 private:
@@ -85,40 +78,8 @@ private:
 
 		pnh.param("scan_cloud_max_points",  scanCloudMaxPoints_, scanCloudMaxPoints_);
 		pnh.param("scan_downsampling_step", scanDownsamplingStep_, scanDownsamplingStep_);
-		pnh.param("scan_range_min",		 scanRangeMin_, scanRangeMin_);
-		pnh.param("scan_range_max",		 scanRangeMax_, scanRangeMax_);
-		pnh.param("scan_voxel_size",		scanVoxelSize_, scanVoxelSize_);
-		pnh.param("scan_normal_k",		  scanNormalK_, scanNormalK_);
-
-		if (pnh.hasParam("plugins"))
-		{
-			XmlRpc::XmlRpcValue pluginsList;
-			pnh.getParam("plugins", pluginsList);
-
-			for (int32_t i = 0; i < pluginsList.size(); ++i)
-			{
-				std::string pluginName = static_cast<std::string>(pluginsList[i]["name"]);
-				std::string type = static_cast<std::string>(pluginsList[i]["type"]);
-				NODELET_INFO("IcpOdometry: Using plugin %s of type \"%s\"", pluginName.c_str(), type.c_str());
-				try {
-					boost::shared_ptr<rtabmap_ros::PluginInterface> plugin = plugin_loader_.createInstance(type);
-					plugins_.push_back(plugin);
-					plugin->initialize(pluginName, pnh);
-					if(!plugin->isEnabled())
-					{
-						NODELET_WARN("Plugin: %s is not enabled, filtering will not occur. \"enabled_\" member "
-									 "should be managed in subclasses. This can be ignored if the "
-									 "plugin should really be initialized as disabled.",
-									 plugin->getName().c_str());
-					}
-				}
-				catch(pluginlib::PluginlibException & ex) {
-					ROS_ERROR("Failed to load plugin %s. Error: %s", pluginName.c_str(), ex.what());
-				}
-
-			}
-		}
-
+		pnh.param("scan_voxel_size", scanVoxelSize_, scanVoxelSize_);
+		pnh.param("scan_normal_k", scanNormalK_, scanNormalK_);
 		if(pnh.hasParam("scan_cloud_normal_k") && !pnh.hasParam("scan_normal_k"))
 		{
 			ROS_WARN("rtabmap: Parameter \"scan_cloud_normal_k\" has been renamed to \"scan_normal_k\". "
@@ -129,8 +90,6 @@ private:
 
 		NODELET_INFO("IcpOdometry: scan_cloud_max_points  = %d", scanCloudMaxPoints_);
 		NODELET_INFO("IcpOdometry: scan_downsampling_step = %d", scanDownsamplingStep_);
-		NODELET_INFO("IcpOdometry: scan_range_min         = %f m", scanRangeMin_);
-		NODELET_INFO("IcpOdometry: scan_range_max         = %f m", scanRangeMax_);
 		NODELET_INFO("IcpOdometry: scan_voxel_size        = %f m", scanVoxelSize_);
 		NODELET_INFO("IcpOdometry: scan_normal_k          = %d", scanNormalK_);
 		NODELET_INFO("IcpOdometry: scan_normal_radius     = %f m", scanNormalRadius_);
@@ -160,49 +119,13 @@ private:
 			{
 				if(!pnh.hasParam("scan_downsampling_step"))
 				{
-					ROS_WARN("IcpOdometry: Transferring value %s of \"%s\" to ros parameter \"scan_downsampling_step\" for convenience. \"%s\" is set to 1.", iter->second.c_str(), iter->first.c_str(), iter->first.c_str());
+					ROS_WARN("IcpOdometry: Transferring value %s of \"%s\" to ros parameter \"scan_downsampling_step\" for convenience. \"%s\" is set to 0.", iter->second.c_str(), iter->first.c_str(), iter->first.c_str());
 					scanDownsamplingStep_ = value;
 					iter->second = "1";
 				}
 				else
 				{
 					ROS_WARN("IcpOdometry: Both parameter \"%s\" and ros parameter \"scan_downsampling_step\" are set.", iter->first.c_str());
-				}
-			}
-		}
-		iter = parameters.find(Parameters::kIcpRangeMin());
-		if(iter != parameters.end())
-		{
-			int value = uStr2Int(iter->second);
-			if(value > 1)
-			{
-				if(!pnh.hasParam("scan_range_min"))
-				{
-					ROS_WARN("IcpOdometry: Transferring value %s of \"%s\" to ros parameter \"scan_range_min\" for convenience. \"%s\" is set to 0.", iter->second.c_str(), iter->first.c_str(), iter->first.c_str());
-					scanRangeMin_ = value;
-					iter->second = "0";
-				}
-				else
-				{
-					ROS_WARN("IcpOdometry: Both parameter \"%s\" and ros parameter \"scan_range_min\" are set.", iter->first.c_str());
-				}
-			}
-		}
-		iter = parameters.find(Parameters::kIcpRangeMax());
-		if(iter != parameters.end())
-		{
-			int value = uStr2Int(iter->second);
-			if(value > 1)
-			{
-				if(!pnh.hasParam("scan_range_max"))
-				{
-					ROS_WARN("IcpOdometry: Transferring value %s of \"%s\" to ros parameter \"scan_range_max\" for convenience. \"%s\" is set to 0.", iter->second.c_str(), iter->first.c_str(), iter->first.c_str());
-					scanRangeMax_ = value;
-					iter->second = "0";
-				}
-				else
-				{
-					ROS_WARN("IcpOdometry: Both parameter \"%s\" and ros parameter \"scan_range_max\" are set.", iter->first.c_str());
 				}
 			}
 		}
@@ -273,7 +196,7 @@ private:
 		sensor_msgs::PointCloud2 scanOut;
 		laser_geometry::LaserProjection projection;
 		projection.transformLaserScanToPointCloud(scanMsg->header.frame_id, *scanMsg, scanOut, this->tfListener());
-		pcl::PointCloud<pcl::PointXYZI>::Ptr pclScan(new pcl::PointCloud<pcl::PointXYZI>);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr pclScan(new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::fromROSMsg(scanOut, *pclScan);
 		pclScan->is_dense = true;
 
@@ -305,7 +228,7 @@ private:
 				{
 					normals = util3d::computeFastOrganizedNormals2D(pclScan, scanNormalK_, scanNormalRadius_);
 				}
-				pcl::PointCloud<pcl::PointXYZINormal>::Ptr pclScanNormal(new pcl::PointCloud<pcl::PointXYZINormal>);
+				pcl::PointCloud<pcl::PointNormal>::Ptr pclScanNormal(new pcl::PointCloud<pcl::PointNormal>);
 				pcl::concatenateFields(*pclScan, *normals, *pclScanNormal);
 				scan = util3d::laserScan2dFromPointCloud(*pclScanNormal);
 
@@ -342,46 +265,19 @@ private:
 		this->processData(data, scanMsg->header.stamp);
 	}
 
-	void callbackCloud(const sensor_msgs::PointCloud2ConstPtr& pointCloudMsg)
+	void callbackCloud(const sensor_msgs::PointCloud2ConstPtr& cloudMsg)
 	{
 		if(this->isPaused())
 		{
 			return;
 		}
-
-		sensor_msgs::PointCloud2 cloudMsg;
-		if (!plugins_.empty())
-		{
-			if (plugins_[0]->isEnabled())
-			{
-				cloudMsg = plugins_[0]->filterPointCloud(*pointCloudMsg);
-			}
-			else
-			{
-				cloudMsg = *pointCloudMsg;
-			}
-
-			if (plugins_.size() > 1)
-			{
-				for (int i = 1; i < plugins_.size(); i++) {
-					if (plugins_[i]->isEnabled()) {
-						cloudMsg = plugins_[i]->filterPointCloud(cloudMsg);
-					}
-				}
-			}
-		}
-		else
-		{
-		cloudMsg = *pointCloudMsg;
-		}
-
 		cv::Mat scan;
 		bool containNormals = false;
 		if(scanVoxelSize_ == 0.0f)
 		{
-			for(unsigned int i=0; i<cloudMsg.fields.size(); ++i)
+			for(unsigned int i=0; i<cloudMsg->fields.size(); ++i)
 			{
-				if(cloudMsg.fields[i].name.compare("normal_x") == 0)
+				if(cloudMsg->fields[i].name.compare("normal_x") == 0)
 				{
 					containNormals = true;
 					break;
@@ -389,67 +285,46 @@ private:
 			}
 		}
 
-		Transform localScanTransform = getTransform(this->frameId(), cloudMsg.header.frame_id, cloudMsg.header.stamp);
+		Transform localScanTransform = getTransform(this->frameId(), cloudMsg->header.frame_id, cloudMsg->header.stamp);
 		if(localScanTransform.isNull())
 		{
-			ROS_ERROR("TF of received scan cloud at time %fs is not set, aborting rtabmap update.", cloudMsg.header.stamp.toSec());
+			ROS_ERROR("TF of received scan cloud at time %fs is not set, aborting rtabmap update.", cloudMsg->header.stamp.toSec());
 			return;
 		}
-		if(scanCloudMaxPoints_ == 0 && cloudMsg.height > 1)
+		if(scanCloudMaxPoints_ == 0 && cloudMsg->height > 1)
 		{
-			scanCloudMaxPoints_ = cloudMsg.height * cloudMsg.width;
+			scanCloudMaxPoints_ = cloudMsg->height * cloudMsg->width;
 			NODELET_WARN("IcpOdometry: \"scan_cloud_max_points\" is not set but input "
 					"cloud is not dense, for convenience it will be set to %d (%dx%d)",
-					scanCloudMaxPoints_, cloudMsg.width, cloudMsg.height);
-		}
-		else if(cloudMsg.height > 1 && scanCloudMaxPoints_ != cloudMsg.height * cloudMsg.width)
-		{
-			NODELET_WARN("IcpOdometry: \"scan_cloud_max_points\" is set to %d but input "
-					"cloud is not dense and has a size of %d (%dx%d), setting to this later size.",
-					scanCloudMaxPoints_, cloudMsg.width *cloudMsg.height, cloudMsg.width, cloudMsg.height);
-			scanCloudMaxPoints_ = cloudMsg.width *cloudMsg.height;
+					scanCloudMaxPoints_, cloudMsg->width, cloudMsg->height);
 		}
 		int maxLaserScans = scanCloudMaxPoints_;
 		if(containNormals)
 		{
-			pcl::PointCloud<pcl::PointXYZINormal>::Ptr pclScan(new pcl::PointCloud<pcl::PointXYZINormal>);
-			pcl::fromROSMsg(cloudMsg, *pclScan);
+			pcl::PointCloud<pcl::PointNormal>::Ptr pclScan(new pcl::PointCloud<pcl::PointNormal>);
+			pcl::fromROSMsg(*cloudMsg, *pclScan);
 			if(pclScan->size() && scanDownsamplingStep_ > 1)
 			{
 				pclScan = util3d::downsample(pclScan, scanDownsamplingStep_);
-				if(pclScan->height>1)
-				{
-					maxLaserScans = pclScan->height * pclScan->width;
-				}
-				else
-				{
-					maxLaserScans /= scanDownsamplingStep_;
-				}
+				maxLaserScans /= scanDownsamplingStep_;
 			}
 			scan = util3d::laserScanFromPointCloud(*pclScan);
 			if(filtered_scan_pub_.getNumSubscribers())
 			{
 				sensor_msgs::PointCloud2 msg;
 				pcl::toROSMsg(*pclScan, msg);
-				msg.header = cloudMsg.header;
+				msg.header = cloudMsg->header;
 				filtered_scan_pub_.publish(msg);
 			}
 		}
 		else
 		{
-			pcl::PointCloud<pcl::PointXYZI>::Ptr pclScan(new pcl::PointCloud<pcl::PointXYZI>);
-			pcl::fromROSMsg(cloudMsg, *pclScan);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr pclScan(new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::fromROSMsg(*cloudMsg, *pclScan);
 			if(pclScan->size() && scanDownsamplingStep_ > 1)
 			{
 				pclScan = util3d::downsample(pclScan, scanDownsamplingStep_);
-				if(pclScan->height>1)
-				{
-					maxLaserScans = pclScan->height * pclScan->width;
-				}
-				else
-				{
-					maxLaserScans /= scanDownsamplingStep_;
-				}
+				maxLaserScans /= scanDownsamplingStep_;
 			}
 			if(!pclScan->is_dense)
 			{
@@ -469,7 +344,7 @@ private:
 				{
 					//compute normals
 					pcl::PointCloud<pcl::Normal>::Ptr normals = util3d::computeNormals(pclScan, scanNormalK_, scanNormalRadius_);
-					pcl::PointCloud<pcl::PointXYZINormal>::Ptr pclScanNormal(new pcl::PointCloud<pcl::PointXYZINormal>);
+					pcl::PointCloud<pcl::PointNormal>::Ptr pclScanNormal(new pcl::PointCloud<pcl::PointNormal>);
 					pcl::concatenateFields(*pclScan, *normals, *pclScanNormal);
 					scan = util3d::laserScanFromPointCloud(*pclScanNormal);
 
@@ -477,7 +352,7 @@ private:
 					{
 						sensor_msgs::PointCloud2 msg;
 						pcl::toROSMsg(*pclScanNormal, msg);
-						msg.header = cloudMsg.header;
+						msg.header = cloudMsg->header;
 						filtered_scan_pub_.publish(msg);
 					}
 				}
@@ -489,28 +364,22 @@ private:
 					{
 						sensor_msgs::PointCloud2 msg;
 						pcl::toROSMsg(*pclScan, msg);
-						msg.header = cloudMsg.header;
+						msg.header = cloudMsg->header;
 						filtered_scan_pub_.publish(msg);
 					}
 				}
 			}
 		}
 
-		LaserScan laserScan = LaserScan::backwardCompatibility(scan, maxLaserScans, 0, localScanTransform);
-		if(scanRangeMin_ > 0 || scanRangeMax_ > 0)
-		{
-			laserScan = util3d::rangeFiltering(laserScan, scanRangeMin_, scanRangeMax_);
-		}
-
 		rtabmap::SensorData data(
-				laserScan,
+				LaserScan::backwardCompatibility(scan, maxLaserScans, 0, localScanTransform),
 				cv::Mat(),
 				cv::Mat(),
 				CameraModel(),
 				0,
-				rtabmap_ros::timestampFromROS(cloudMsg.header.stamp));
+				rtabmap_ros::timestampFromROS(cloudMsg->header.stamp));
 
-		this->processData(data, cloudMsg.header.stamp);
+		this->processData(data, cloudMsg->header.stamp);
 	}
 
 protected:
@@ -525,14 +394,9 @@ private:
 	ros::Publisher filtered_scan_pub_;
 	int scanCloudMaxPoints_;
 	int scanDownsamplingStep_;
-	double scanRangeMin_;
-	double scanRangeMax_;
 	double scanVoxelSize_;
 	int scanNormalK_;
 	double scanNormalRadius_;
-	std::vector<boost::shared_ptr<rtabmap_ros::PluginInterface> > plugins_;
-	pluginlib::ClassLoader<rtabmap_ros::PluginInterface> plugin_loader_;
-
 };
 
 PLUGINLIB_EXPORT_CLASS(rtabmap_ros::ICPOdometry, nodelet::Nodelet);

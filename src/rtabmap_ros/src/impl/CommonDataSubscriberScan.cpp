@@ -111,7 +111,6 @@ void CommonDataSubscriber::odomScan3dInfoCallback(
 	commonLaserScanCallback(odomMsg, userDataMsg, scan2dMsg, scanMsg, odomInfoMsg);
 }
 
-#ifdef RTABMAP_SYNC_USER_DATA
 void CommonDataSubscriber::dataScan2dCallback(
 		const rtabmap_ros::UserDataConstPtr & userDataMsg,
 		const sensor_msgs::LaserScanConstPtr& scanMsg)
@@ -193,7 +192,6 @@ void CommonDataSubscriber::odomDataScan3dInfoCallback(
 	sensor_msgs::LaserScanConstPtr scan2dMsg; // Null
 	commonLaserScanCallback(odomMsg, userDataMsg, scan2dMsg, scanMsg, odomInfoMsg);
 }
-#endif
 
 void CommonDataSubscriber::setupScanCallbacks(
 		ros::NodeHandle & nh,
@@ -220,7 +218,6 @@ void CommonDataSubscriber::setupScanCallbacks(
 			scan3dSub_.subscribe(nh, "scan_cloud", 1);
 		}
 
-#ifdef RTABMAP_SYNC_USER_DATA
 		if(subscribeOdom && subscribeUserData)
 		{
 			odomSub_.subscribe(nh, "odom", 1);
@@ -253,9 +250,7 @@ void CommonDataSubscriber::setupScanCallbacks(
 				}
 			}
 		}
-		else
-#endif			
-		if(subscribeOdom)
+		else if(subscribeOdom)
 		{
 			odomSub_.subscribe(nh, "odom", 1);
 
@@ -286,7 +281,6 @@ void CommonDataSubscriber::setupScanCallbacks(
 				}
 			}
 		}
-#ifdef RTABMAP_SYNC_USER_DATA
 		else if(subscribeUserData)
 		{
 			userDataSub_.subscribe(nh, "user_data", 1);
@@ -318,7 +312,6 @@ void CommonDataSubscriber::setupScanCallbacks(
 				}
 			}
 		}
-#endif
 		else
 		{
 			if(scan2dTopic)

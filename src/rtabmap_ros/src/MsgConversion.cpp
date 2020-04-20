@@ -889,28 +889,21 @@ rtabmap::Signature nodeDataFromROS(const rtabmap_ros::NodeData & msg)
 	{
 		// multi-cameras model
 		if(msg.fx.size() &&
-		   msg.fx.size() == msg.fy.size() &&
-		   msg.fx.size() == msg.cx.size() &&
-		   msg.fx.size() == msg.cy.size() &&
+		   msg.fx.size() == msg.fy.size(),
+		   msg.fx.size() == msg.cx.size(),
+		   msg.fx.size() == msg.cy.size(),
 		   msg.fx.size() == msg.localTransform.size())
 		{
 			for(unsigned int i=0; i<msg.fx.size(); ++i)
 			{
-				if(msg.fx[i] == 0)
-				{
-					models.push_back(rtabmap::CameraModel());
-				}
-				else
-				{
-					models.push_back(rtabmap::CameraModel(
-							msg.fx[i],
-							msg.fy[i],
-							msg.cx[i],
-							msg.cy[i],
-							transformFromGeometryMsg(msg.localTransform[i]),
-							0.0,
-							cv::Size(msg.width[i], msg.height[i])));
-				}
+				models.push_back(rtabmap::CameraModel(
+						msg.fx[i],
+						msg.fy[i],
+						msg.cx[i],
+						msg.cy[i],
+						transformFromGeometryMsg(msg.localTransform[i]),
+						0.0,
+						cv::Size(msg.width[i], msg.height[i])));
 			}
 		}
 	}
@@ -1117,95 +1110,6 @@ void nodeInfoToROS(const rtabmap::Signature & signature, rtabmap_ros::NodeData &
 	transformToPoseMsg(signature.getGroundTruthPose(), msg.groundTruthPose);
 }
 
-std::map<std::string, float> odomInfoToStatistics(const rtabmap::OdometryInfo & info)
-{
-	std::map<std::string, float> stats;
-
-	stats.insert(std::make_pair("Odometry/TimeRegistration/ms", info.reg.totalTime*1000.0f));
-	stats.insert(std::make_pair("Odometry/RAM_usage/MB", info.memoryUsage));
-
-	// Based on rtabmap/MainWindow.cpp
-	stats.insert(std::make_pair("Odometry/Features/", info.features));
-	stats.insert(std::make_pair("Odometry/Matches/", info.reg.matches));
-	stats.insert(std::make_pair("Odometry/MatchesRatio/", info.features<=0?0.0f:float(info.reg.inliers)/float(info.features)));
-	stats.insert(std::make_pair("Odometry/Inliers/", info.reg.inliers));
-	stats.insert(std::make_pair("Odometry/InliersMeanDistance/m", info.reg.inliersMeanDistance));
-	stats.insert(std::make_pair("Odometry/InliersDistribution/", info.reg.inliersDistribution));
-	stats.insert(std::make_pair("Odometry/InliersRatio/", info.reg.inliers));
-	stats.insert(std::make_pair("Odometry/ICPInliersRatio/", info.reg.icpInliersRatio));
-	stats.insert(std::make_pair("Odometry/ICPRotation/rad", info.reg.icpRotation));
-	stats.insert(std::make_pair("Odometry/ICPTranslation/m", info.reg.icpTranslation));
-	stats.insert(std::make_pair("Odometry/ICPStructuralComplexity/", info.reg.icpStructuralComplexity));
-	stats.insert(std::make_pair("Odometry/ICPStructuralDistribution/", info.reg.icpStructuralDistribution));
-	stats.insert(std::make_pair("Odometry/ICPCorrespondences/", info.reg.icpCorrespondences));
-	stats.insert(std::make_pair("Odometry/StdDevLin/", sqrt((float)info.reg.covariance.at<double>(0,0))));
-	stats.insert(std::make_pair("Odometry/StdDevAng/", sqrt((float)info.reg.covariance.at<double>(5,5))));
-	stats.insert(std::make_pair("Odometry/VarianceLin/", (float)info.reg.covariance.at<double>(0,0)));
-	stats.insert(std::make_pair("Odometry/VarianceAng/", (float)info.reg.covariance.at<double>(5,5)));
-	stats.insert(std::make_pair("Odometry/TimeEstimation/ms", info.timeEstimation*1000.0f));
-	stats.insert(std::make_pair("Odometry/TimeFiltering/ms", info.timeParticleFiltering*1000.0f));
-	stats.insert(std::make_pair("Odometry/LocalMapSize/", info.localMapSize));
-	stats.insert(std::make_pair("Odometry/LocalScanMapSize/", info.localScanMapSize));
-	stats.insert(std::make_pair("Odometry/LocalKeyFrames/", info.localKeyFrames));
-	stats.insert(std::make_pair("Odometry/LocalBundleOutliers/", info.localBundleOutliers));
-	stats.insert(std::make_pair("Odometry/LocalBundleConstraints/", info.localBundleConstraints));
-	stats.insert(std::make_pair("Odometry/LocalBundleTime/ms", info.localBundleTime*1000.0f));
-	stats.insert(std::make_pair("Odometry/KeyFrameAdded/", info.keyFrameAdded?1.0f:0.0f));
-	stats.insert(std::make_pair("Odometry/Interval/ms", (float)info.interval));
-	stats.insert(std::make_pair("Odometry/Distance/m", info.distanceTravelled));
-
-	float x,y,z,roll,pitch,yaw;
-	float dist = 0.0f, speed=0.0f;
-	if(!info.transform.isNull())
-	{
-		info.transform.getTranslationAndEulerAngles(x,y,z,roll,pitch,yaw);
-		dist = info.transform.getNorm();
-		stats.insert(std::make_pair("Odometry/T/m", dist));
-		stats.insert(std::make_pair("Odometry/Tx/m", x));
-		stats.insert(std::make_pair("Odometry/Ty/m", y));
-		stats.insert(std::make_pair("Odometry/Tz/m", z));
-		stats.insert(std::make_pair("Odometry/Troll/deg", roll*180.0/CV_PI));
-		stats.insert(std::make_pair("Odometry/Tpitch/deg", pitch*180.0/CV_PI));
-		stats.insert(std::make_pair("Odometry/Tyaw/deg", yaw*180.0/CV_PI));
-
-		if(info.interval>0.0)
-		{
-			speed = dist/info.interval;
-			stats.insert(std::make_pair("Odometry/Speed/kph", speed*3.6));
-			stats.insert(std::make_pair("Odometry/Speed/mph", speed*2.237));
-			stats.insert(std::make_pair("Odometry/Speed/mps", speed));
-		}
-	}
-	if(!info.transformGroundTruth.isNull())
-	{
-		if(!info.transform.isNull())
-		{
-			rtabmap::Transform diff = info.transformGroundTruth.inverse()*info.transform;
-			stats.insert(std::make_pair("Odometry/TG_error_lin/m", diff.getNorm()));
-			stats.insert(std::make_pair("Odometry/TG_error_ang/deg", diff.getAngle()*180.0/CV_PI));
-		}
-
-		info.transformGroundTruth.getTranslationAndEulerAngles(x,y,z,roll,pitch,yaw);
-		dist = info.transformGroundTruth.getNorm();
-		stats.insert(std::make_pair("Odometry/TG/m", dist));
-		stats.insert(std::make_pair("Odometry/TGx/m", x));
-		stats.insert(std::make_pair("Odometry/TGy/m", y));
-		stats.insert(std::make_pair("Odometry/TGz/m", z));
-		stats.insert(std::make_pair("Odometry/TGroll/deg", roll*180.0/CV_PI));
-		stats.insert(std::make_pair("Odometry/TGpitch/deg", pitch*180.0/CV_PI));
-		stats.insert(std::make_pair("Odometry/TGyaw/deg", yaw*180.0/CV_PI));
-
-		if(info.interval>0.0)
-		{
-			speed = dist/info.interval;
-			stats.insert(std::make_pair("Odometry/SpeedG/kph", speed*3.6));
-			stats.insert(std::make_pair("Odometry/SpeedG/mph", speed*2.237));
-			stats.insert(std::make_pair("Odometry/SpeedG/mps", speed));
-		}
-	}
-	return stats;
-}
-
 rtabmap::OdometryInfo odomInfoFromROS(const rtabmap_ros::OdomInfo & msg)
 {
 	rtabmap::OdometryInfo info;
@@ -1216,8 +1120,6 @@ rtabmap::OdometryInfo odomInfoFromROS(const rtabmap_ros::OdomInfo & msg)
 	info.reg.icpRotation = msg.icpRotation;
 	info.reg.icpTranslation = msg.icpTranslation;
 	info.reg.icpStructuralComplexity = msg.icpStructuralComplexity;
-	info.reg.icpStructuralDistribution = msg.icpStructuralDistribution;
-	info.reg.icpCorrespondences = msg.icpCorrespondences;
 	info.reg.covariance = cv::Mat(6,6,CV_64FC1, (void*)msg.covariance.data()).clone();
 	info.features = msg.features;
 	info.localMapSize = msg.localMapSize;
@@ -1274,8 +1176,6 @@ void odomInfoToROS(const rtabmap::OdometryInfo & info, rtabmap_ros::OdomInfo & m
 	msg.icpRotation = info.reg.icpRotation;
 	msg.icpTranslation = info.reg.icpTranslation;
 	msg.icpStructuralComplexity = info.reg.icpStructuralComplexity;
-	msg.icpStructuralDistribution = info.reg.icpStructuralDistribution;
-	msg.icpCorrespondences = info.reg.icpCorrespondences;
 	if(info.reg.covariance.type() == CV_64FC1 && info.reg.covariance.cols == 6 && info.reg.covariance.rows == 6)
 	{
 		memcpy(msg.covariance.data(), info.reg.covariance.data, 36*sizeof(double));
@@ -1839,20 +1739,9 @@ bool convertScanMsg(
 	bool containIntensity = false;
 	for(unsigned int i=0; i<scanOut.fields.size(); ++i)
 	{
-		if(scanOut.fields[i].datatype == sensor_msgs::PointField::FLOAT32)
+		if(scanOut.fields[i].name.compare("intensity") == 0)
 		{
 			containIntensity = true;
-		}
-		else
-		{
-			static bool warningShown = false;
-			if(!warningShown)
-			{
-				ROS_WARN("The input scan cloud has an \"intensity\" field "
-						"but the datatype (%d) is not supported. Intensity will be ignored. "
-						"This message is only shown once.", scanOut.fields[i].datatype);
-				warningShown = true;
-			}
 		}
 	}
 
@@ -1922,21 +1811,7 @@ bool convertScan3dMsg(
 		}
 		if(scan3dMsg->fields[i].name.compare("intensity") == 0)
 		{
-			if(scan3dMsg->fields[i].datatype == sensor_msgs::PointField::FLOAT32)
-			{
-				containIntensity = true;
-			}
-			else
-			{
-				static bool warningShown = false;
-				if(!warningShown)
-				{
-					ROS_WARN("The input scan cloud has an \"intensity\" field "
-							"but the datatype (%d) is not supported. Intensity will be ignored. "
-							"This message is only shown once.", scan3dMsg->fields[i].datatype);
-					warningShown = true;
-				}
-			}
+			containIntensity = true;
 		}
 	}
 

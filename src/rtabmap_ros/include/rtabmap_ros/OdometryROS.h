@@ -139,9 +139,6 @@ private:
 	double expectedUpdateRate_;
 	int odomStrategy_;
 	bool waitIMUToinit_;
-	bool imuProcessed_;
-	double lastImuReceivedStamp_;
-	rtabmap::SensorData bufferedData_;
 };
 
 }

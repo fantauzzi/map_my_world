@@ -57,8 +57,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "rtabmap_ros/Goal.h"
 #include "rtabmap_ros/GetPlan.h"
 #include "rtabmap_ros/CommonDataSubscriber.h"
-#include "rtabmap_ros/OdomInfo.h"
-#include "rtabmap_ros/AddLink.h"
 
 #include "MapsManager.h"
 
@@ -66,8 +64,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <octomap_msgs/GetOctomap.h>
 #endif
 
-#ifdef WITH_APRILTAG_ROS
-#include <apriltag_ros/AprilTagDetectionArray.h>
+#ifdef WITH_APRILTAGS2_ROS
+#include <apriltags2_ros/AprilTagDetectionArray.h>
 #endif
 
 #include <actionlib/client/simple_action_client.h>
@@ -141,12 +139,10 @@ private:
 	void userDataAsyncCallback(const rtabmap_ros::UserDataConstPtr & dataMsg);
 	void globalPoseAsyncCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr & globalPoseMsg);
 	void gpsFixAsyncCallback(const sensor_msgs::NavSatFixConstPtr & gpsFixMsg);
-#ifdef WITH_APRILTAG_ROS
-	void tagDetectionsAsyncCallback(const apriltag_ros::AprilTagDetectionArray & tagDetections);
+#ifdef WITH_APRILTAGS2_ROS
+	void tagDetectionsAsyncCallback(const apriltags2_ros::AprilTagDetectionArray & tagDetections);
 #endif
 	void imuAsyncCallback(const sensor_msgs::ImuConstPtr & tagDetections);
-	void interOdomCallback(const nav_msgs::OdometryConstPtr & msg);
-	void interOdomInfoCallback(const nav_msgs::OdometryConstPtr & msg1, const rtabmap_ros::OdomInfoConstPtr & msg2);
 
 	void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr & msg);
 
@@ -192,7 +188,6 @@ private:
 	bool cancelGoalCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 	bool setLabelCallback(rtabmap_ros::SetLabel::Request& req, rtabmap_ros::SetLabel::Response& res);
 	bool listLabelsCallback(rtabmap_ros::ListLabels::Request& req, rtabmap_ros::ListLabels::Response& res);
-	bool addLinkCallback(rtabmap_ros::AddLink::Request&, rtabmap_ros::AddLink::Response&);
 #ifdef WITH_OCTOMAP_MSGS
 	bool octomapBinaryCallback(octomap_msgs::GetOctomap::Request  &req, octomap_msgs::GetOctomap::Response &res);
 	bool octomapFullCallback(octomap_msgs::GetOctomap::Request  &req, octomap_msgs::GetOctomap::Response &res);
@@ -299,7 +294,6 @@ private:
 	ros::ServiceServer cancelGoalSrv_;
 	ros::ServiceServer setLabelSrv_;
 	ros::ServiceServer listLabelsSrv_;
-	ros::ServiceServer addLinkSrv_;
 #ifdef WITH_OCTOMAP_MSGS
 	ros::ServiceServer octomapBinarySrv_;
 	ros::ServiceServer octomapFullSrv_;
@@ -325,14 +319,6 @@ private:
 	std::map<int, geometry_msgs::PoseWithCovarianceStamped> tags_;
 	ros::Subscriber imuSub_;
 	std::map<double, rtabmap::Transform> imus_;
-	std::string imuFrameId_;
-
-	ros::Subscriber interOdomSub_;
-	std::list<std::pair<nav_msgs::Odometry, rtabmap_ros::OdomInfo> > interOdoms_;
-	message_filters::Subscriber<nav_msgs::Odometry> interOdomSyncSub_;
-	message_filters::Subscriber<rtabmap_ros::OdomInfo> interOdomInfoSyncSub_;
-	typedef message_filters::sync_policies::ExactTime<nav_msgs::Odometry, rtabmap_ros::OdomInfo> MyExactInterOdomSyncPolicy;
-	message_filters::Synchronizer<MyExactInterOdomSyncPolicy> * interOdomSync_;
 
 	bool stereoToDepth_;
 	bool odomSensorSync_;
